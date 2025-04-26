@@ -1,8 +1,7 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useRef } from "react";
 import styles from "./test.module.css";
-import { todo } from "node:test";
 
 export default function Test(): JSX.Element {
   type TodoItem = {
@@ -14,67 +13,127 @@ export default function Test(): JSX.Element {
 
   const [todos, setTodos] = useState<TodoItem[]>([]);
   const [showCompleted, setShowCompleted] = useState<boolean>(true);
-  const [error, setError] = useState<string | null>(null);
+  const [isAddingNewTodo, setIsAddingNewTodo] = useState<boolean>(false);
+  const newTodoInputRef = useRef<HTMLInputElement>(null);
+
   const handleAddEmptyTodo = () => {
-    // Check if there are any empty todos already being edited
-    if (todos.some((todo) => todo.editing && todo.text.trim() === "")) {
-      setError(
+    // If we're already adding a todo or there's an empty one being edited, don't add another
+    const hasEmptyTodo = todos.some(
+      (todo) => todo.editing && todo.text.trim() === ""
+    );
+
+    if (isAddingNewTodo || hasEmptyTodo) {
+      window.alert(
         "Please complete the current empty item before adding a new one."
       );
       return;
     }
 
-    // Clear any existing error and add a new empty todo
-    setError(null);
+    // Set flag to indicate we're adding a new todo
+    setIsAddingNewTodo(true);
+  };
+
+  const handleCreateNewTodo = (text: string) => {
+    if (!text.trim()) {
+      window.alert("Todo text cannot be empty.");
+      setIsAddingNewTodo(false);
+      return;
+    }
+
+    // Add a new todo with the provided text
     setTodos([
       ...todos,
-      { id: Date.now(), text: "", editing: true, complete: false },
+      { id: Date.now(), text, editing: false, complete: false },
     ]);
+    setIsAddingNewTodo(false);
   };
 
   const handleEdit = (id: number, replacement: string) => {
     if (replacement.trim() === "") {
-      setError("Todo text cannot be empty."); // Set error if input is empty
+      window.alert("Todo text cannot be empty.");
+
+      // Set editing to false but keep the original text
+      setTodos(
+        todos.map((todo) =>
+          todo.id === id ? { ...todo, editing: false } : todo
+        )
+      );
       return;
     }
 
-    setError(null); // Clear error if input is valid
+    // Save the edited todo
     setTodos(
       todos.map((todo) =>
         todo.id === id ? { ...todo, text: replacement, editing: false } : todo
       )
     );
   };
-
   const handleComplete = (id: number) => {
     setTodos((prevTodos) =>
-      prevTodos.map((todo) =>
-        todo.id === id ? { ...todo, complete: !todo.complete } : todo
-      )
+      prevTodos.map((todo) => {
+        if (todo.id === id) {
+          if (!todo.text.trim()) {
+            window.alert("Cannot mark an empty to-do item as complete.");
+            return todo;
+          }
+          return { ...todo, complete: !todo.complete };
+        }
+        return todo;
+      })
     );
   };
 
   const handleDelete = (id: number) => {
     setTodos(todos.filter((todo) => todo.id !== id));
   };
-  const completedTodos = todos.filter((todo) => todo.complete); // Filter completed items
+
+  const completedTodos = todos.filter((todo) => todo.complete);
 
   return (
     <div
       className={styles.container}
       onDoubleClick={(e) => {
-        // Double click to enter a reminder
         if (e.target === e.currentTarget) {
           handleAddEmptyTodo();
         }
       }}
     >
-      <h1>To Do List</h1>
-      <p>Double click for input</p>
+      <h1 className={styles.title}>To Do List</h1>
+      <p className={styles.subtitle}>Double click for input</p>
+      <p className={styles.subtitle}>
+        Press Enter or click anywhere empty to save your input
+      </p>
+
+      {/* New Todo Input - Only shown when isAddingNewTodo is true */}
+      {isAddingNewTodo && (
+        <div className={styles.todoRow}>
+          <label className={styles.checkboxContainer}>
+            <input type="checkbox" disabled className="checkbox" />
+            <span className="checkmark" />
+          </label>
+          <input
+            ref={newTodoInputRef}
+            className={styles.textInput}
+            placeholder="Enter new todo..."
+            autoFocus
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                handleCreateNewTodo(e.currentTarget.value);
+              } else if (e.key === "Escape") {
+                setIsAddingNewTodo(false);
+              }
+            }}
+            onBlur={(e) => {
+              handleCreateNewTodo(e.target.value);
+            }}
+          />
+        </div>
+      )}
+
       <ul>
         {todos.map((todo) => (
-          <li key={todo.id}>
-            <label className="checkbox-container">
+          <li key={todo.id} className={styles.todoRow}>
+            <label className={styles.checkboxContainer}>
               <input
                 type="checkbox"
                 checked={todo.complete}
@@ -85,18 +144,21 @@ export default function Test(): JSX.Element {
             </label>
 
             {todo.editing ? (
-              <>
-                <input
-                  defaultValue={todo.text}
-                  onBlur={(e) => handleEdit(todo.id, e.target.value)}
-                  autoFocus
-                />
-                {/* Error Message */}
-                {error && <p style={{ color: "red" }}>{error}</p>}
-              </>
+              <input
+                defaultValue={todo.text}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    handleEdit(todo.id, e.currentTarget.value);
+                  }
+                }}
+                onBlur={(e) => handleEdit(todo.id, e.target.value)}
+                autoFocus
+                className={styles.textInput}
+              />
             ) : (
               <>
                 <span
+                  className={styles.displayText}
                   onDoubleClick={() =>
                     setTodos(
                       todos.map((t) =>
@@ -108,14 +170,19 @@ export default function Test(): JSX.Element {
                 >
                   {todo.text}
                 </span>
-                <button onClick={() => handleDelete(todo.id)}>Delete</button>
+                <button
+                  className={styles.deleteButton}
+                  onClick={() => handleDelete(todo.id)}
+                >
+                  Delete
+                </button>
               </>
             )}
           </li>
         ))}
       </ul>
 
-      {/* Divider and Completed Items Section */}
+      {/* Completed Items Section */}
       <hr style={{ margin: "20px 0" }} />
       <div style={{ marginBottom: "10px" }}>
         <span>{`Completed Items: ${completedTodos.length}`}</span>
@@ -131,7 +198,6 @@ export default function Test(): JSX.Element {
         </button>
       </div>
 
-      {/* List of Completed Items */}
       {showCompleted && (
         <ul>
           {completedTodos.map((todo) => (
