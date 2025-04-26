@@ -99,11 +99,22 @@ export default function Test(): JSX.Element {
       }}
     >
       <h1 className={styles.title}>To Do List</h1>
-      <p className={styles.subtitle}>Double click for input</p>
+      <p className={styles.subtitle}>
+        Double click or click "Add new todo" button for input
+      </p>
       <p className={styles.subtitle}>
         Press Enter or click anywhere empty to save your input
       </p>
-
+      {/* Add a dedicated button for adding new todos */}
+      <div className={styles.addButtonContainer}>
+        <button
+          className={styles.addButton}
+          onClick={handleAddEmptyTodo}
+          aria-label="Add new todo"
+        >
+          + Add New Todo
+        </button>
+      </div>
       {/* New Todo Input - Only shown when isAddingNewTodo is true */}
       {isAddingNewTodo && (
         <div className={styles.todoRow}>
@@ -187,12 +198,8 @@ export default function Test(): JSX.Element {
       <div style={{ marginBottom: "10px" }}>
         <span>{`Completed Items: ${completedTodos.length}`}</span>
         <button
+          className={styles.hideButton}
           onClick={() => setShowCompleted((prev) => !prev)}
-          style={{
-            marginLeft: "10px",
-            padding: "5px 10px",
-            cursor: "pointer",
-          }}
         >
           {showCompleted ? "Hide" : "Show All"}
         </button>
@@ -211,7 +218,7 @@ export default function Test(): JSX.Element {
                 />
                 <span className="checkmark" />
               </label>
-              <span>{todo.text}</span>
+              <span className={styles.completedText}>{todo.text}</span>
             </li>
           ))}
         </ul>
