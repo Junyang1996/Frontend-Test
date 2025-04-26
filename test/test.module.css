@@ -57,14 +57,14 @@
   background-color: rgba(255, 255, 255, 0.2);
   color: rgb(178, 5, 5);
   font-weight: bold;
-  border-radius: 25px; /* Rounded corners */
-  cursor: pointer; /* Pointer cursor on hover */
-  transition: background-color 0.3s ease; /* Smooth transition for hover effect */
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
 }
 
 .deleteButton:hover {
   color: white;
-  background-color: #e60000; /* Darker red on hover */
+  background-color: #e60000;
 }
 .completedText {
   color: gray;
